@@ -1,17 +1,8 @@
 /// Apple Translation API を使った CLI 翻訳ツール。
 ///
-/// stdin から JSON Lines を読み取り、各行を翻訳して stdout に JSON Lines で出力する。
-///
-/// 入力形式 (JSON Lines):
-///   {"text": "Hello, world!"}
-///   {"text": "How are you?"}
-///
-/// 出力形式 (JSON Lines):
-///   {"text": "こんにちは、世界！"}
-///   {"text": "お元気ですか？"}
-///
 /// 使い方:
-///   echo '{"text":"Hello"}' | .build/release/apple-translate --from en --to ja
+///   echo "Hello" | apple-translate --from en --to ja
+///   apple-translate --list-languages
 
 import Foundation
 import Translation
@@ -24,6 +15,25 @@ struct AppleTranslateCLI {
 
     nonisolated static func _run() async throws {
         let args = CommandLine.arguments
+
+        // --help
+        if args.contains("--help") || args.contains("-h") {
+            printUsage()
+            return
+        }
+
+        // --version
+        if args.contains("--version") || args.contains("-v") {
+            print("apple-translate 1.0.0")
+            return
+        }
+
+        // --list-languages
+        if args.contains("--list-languages") || args.contains("-l") {
+            try await listLanguages()
+            return
+        }
+
         let sourceLang = flagValue(args: args, flag: "--from") ?? "en"
         let targetLang = flagValue(args: args, flag: "--to") ?? "ja"
 
@@ -36,15 +46,7 @@ struct AppleTranslateCLI {
         while let line = readLine(strippingNewline: true) {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             if trimmed.isEmpty { continue }
-
-            if let data = trimmed.data(using: .utf8),
-               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let text = obj["text"] as? String {
-                requests.append((index: lineIndex, text: text))
-            } else {
-                // JSON でなければそのままテキストとして扱う
-                requests.append((index: lineIndex, text: trimmed))
-            }
+            requests.append((index: lineIndex, text: trimmed))
             lineIndex += 1
         }
 
@@ -96,7 +98,6 @@ struct AppleTranslateCLI {
                         FileHandle.standardError.write(
                             Data("Error translating line \(req.index): \(error)\n".utf8)
                         )
-                        // 失敗時は原文を返す
                         results.append((index: req.index, translated: req.text))
                     }
                 }
@@ -106,15 +107,56 @@ struct AppleTranslateCLI {
         // index 順にソートして出力
         results.sort { $0.index < $1.index }
 
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = []
         for r in results {
-            let obj: [String: String] = ["text": r.translated]
-            if let data = try? encoder.encode(obj),
-               let jsonStr = String(data: data, encoding: .utf8) {
-                print(jsonStr)
-            }
+            print(r.translated)
         }
+    }
+
+    // MARK: - サブコマンド
+
+    nonisolated static func listLanguages() async throws {
+        let availability = LanguageAvailability()
+        let languages = await availability.supportedLanguages
+
+        let englishLocale = Locale(identifier: "en")
+        let sorted = languages
+            .map { lang -> (code: String, name: String) in
+                let code = lang.maximalIdentifier
+                let name = englishLocale.localizedString(forIdentifier: code) ?? code
+                return (code: code, name: name)
+            }
+            .sorted { $0.code < $1.code }
+
+        let maxCodeLen = sorted.map(\.code.count).max() ?? 5
+        for lang in sorted {
+            let padded = lang.code.padding(toLength: maxCodeLen + 2, withPad: " ", startingAt: 0)
+            print("\(padded)\(lang.name)")
+        }
+    }
+
+    // MARK: - ヘルパー
+
+    static func printUsage() {
+        let usage = """
+        Usage: apple-translate [OPTIONS]
+
+        A CLI translation tool powered by Apple Translation API.
+        Reads text from stdin and writes translated text to stdout.
+        All translations are performed on-device.
+
+        Options:
+          --from <LANG>        Source language code (default: en)
+          --to <LANG>          Target language code (default: ja)
+          --list-languages, -l List available languages
+          --version, -v        Show version
+          --help, -h           Show this help
+
+        Examples:
+          echo "Hello, world!" | apple-translate
+          echo "こんにちは" | apple-translate --from ja --to en
+          apple-translate --list-languages
+        """
+        print(usage)
     }
 
     static func flagValue(args: [String], flag: String) -> String? {
