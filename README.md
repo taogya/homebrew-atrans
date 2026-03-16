@@ -35,7 +35,7 @@ cp .build/release/apple-translate /usr/local/bin/
 ### プレーンテキスト翻訳 / Plain Text Translation
 
 ```bash
-echo "Hello, world!" | apple-translate --from en --to ja
+echo 'Hello, world!' | apple-translate --from en --to ja
 # => こんにちは、世界！
 
 echo "こんにちは" | apple-translate --from ja --to en

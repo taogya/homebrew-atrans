@@ -178,7 +178,7 @@ struct AppleTranslateCLI {
           are accepted. Use --list-languages to see available languages.
 
         Examples:
-          echo "Hello, world!" | apple-translate --from en --to ja
+          echo 'Hello, world!' | apple-translate --from en --to ja
           echo "こんにちは" | apple-translate --from ja --to en
           echo "Hello" | apple-translate --from en-Latn-US --to ja-Jpan-JP
           apple-translate --list-languages
