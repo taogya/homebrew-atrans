@@ -2,6 +2,7 @@
 ///
 /// 使い方:
 ///   echo "Hello" | apple-translate --from en --to ja
+///   echo "こんにちは" | apple-translate --from ja-Jpan-JP --to en-Latn-US
 ///   apple-translate --list-languages
 
 import Foundation
@@ -24,7 +25,7 @@ struct AppleTranslateCLI {
 
         // --version
         if args.contains("--version") || args.contains("-v") {
-            print("apple-translate 1.0.0")
+            print("apple-translate 1.0.1")
             return
         }
 
@@ -34,11 +35,32 @@ struct AppleTranslateCLI {
             return
         }
 
-        let sourceLang = flagValue(args: args, flag: "--from") ?? "en"
-        let targetLang = flagValue(args: args, flag: "--to") ?? "ja"
+        // --from / --to は必須
+        guard let sourceLang = flagValue(args: args, flag: "--from") else {
+            FileHandle.standardError.write(Data("Error: --from is required.\n".utf8))
+            _exit(1)
+        }
+        guard let targetLang = flagValue(args: args, flag: "--to") else {
+            FileHandle.standardError.write(Data("Error: --to is required.\n".utf8))
+            _exit(1)
+        }
+
+        // TTY（パイプなし）の場合はエラー
+        if isatty(STDIN_FILENO) != 0 {
+            FileHandle.standardError.write(Data("Error: No input. Pipe text via stdin.\n".utf8))
+            _exit(1)
+        }
 
         let source = Locale.Language(identifier: sourceLang)
         let target = Locale.Language(identifier: targetLang)
+
+        // 同一言語ペアの検出
+        if source.languageCode == target.languageCode {
+            FileHandle.standardError.write(
+                Data("Error: Source and target are the same language (\(source.maximalIdentifier) and \(target.maximalIdentifier)).\n".utf8)
+            )
+            _exit(1)
+        }
 
         // stdin から全行読み取り
         var requests: [(index: Int, text: String)] = []
@@ -138,22 +160,27 @@ struct AppleTranslateCLI {
 
     static func printUsage() {
         let usage = """
-        Usage: apple-translate [OPTIONS]
+        Usage: echo <text> | apple-translate --from <LANG> --to <LANG>
 
         A CLI translation tool powered by Apple Translation API.
         Reads text from stdin and writes translated text to stdout.
         All translations are performed on-device.
 
         Options:
-          --from <LANG>        Source language code (default: en)
-          --to <LANG>          Target language code (default: ja)
+          --from <LANG>        Source language code (required)
+          --to <LANG>          Target language code (required)
           --list-languages, -l List available languages
           --version, -v        Show version
           --help, -h           Show this help
 
+        Language codes:
+          Both short (ja, en, ko, zh-Hans) and full (ja-Jpan-JP, en-Latn-US) forms
+          are accepted. Use --list-languages to see available languages.
+
         Examples:
-          echo "Hello, world!" | apple-translate
+          echo "Hello, world!" | apple-translate --from en --to ja
           echo "こんにちは" | apple-translate --from ja --to en
+          echo "Hello" | apple-translate --from en-Latn-US --to ja-Jpan-JP
           apple-translate --list-languages
         """
         print(usage)

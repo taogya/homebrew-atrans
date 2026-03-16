@@ -1,5 +1,5 @@
 """
-Integration tests for apple-translate CLI.
+Integration tests for apple-translate CLI v1.0.1.
 
 Requires:
     - The CLI binary built at .build/release/apple-translate
@@ -14,8 +14,47 @@ import pytest
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CLI = os.path.join(PROJECT_ROOT, ".build", "release", "apple-translate")
 
+# 21 supported languages (maximalIdentifier) — explicitly listed
+SUPPORTED_LANGUAGES = [
+    "ar-Arab-AE",
+    "de-Latn-DE",
+    "en-Latn-GB",
+    "en-Latn-US",
+    "es-Latn-ES",
+    "fr-Latn-FR",
+    "hi-Deva-IN",
+    "id-Latn-ID",
+    "it-Latn-IT",
+    "ja-Jpan-JP",
+    "ko-Kore-KR",
+    "nl-Latn-NL",
+    "pl-Latn-PL",
+    "pt-Latn-BR",
+    "ru-Cyrl-RU",
+    "th-Thai-TH",
+    "tr-Latn-TR",
+    "uk-Cyrl-UA",
+    "vi-Latn-VN",
+    "zh-Hans-CN",
+    "zh-Hant-TW",
+]
 
-def run_cli(args: list[str] = [], input_text: str | None = None, timeout: int = 30) -> subprocess.CompletedProcess:
+# Same-languageCode pairs (4 pairs) — these should be rejected
+SAME_LANGUAGE_PAIRS = [
+    ("en-Latn-GB", "en-Latn-US"),
+    ("en-Latn-US", "en-Latn-GB"),
+    ("zh-Hans-CN", "zh-Hant-TW"),
+    ("zh-Hant-TW", "zh-Hans-CN"),
+]
+
+_SAME_LANG_SET = {(s, t) for s, t in SAME_LANGUAGE_PAIRS}
+
+
+def run_cli(
+    args: list[str] = [],
+    input_text: str | None = None,
+    timeout: int = 30,
+) -> subprocess.CompletedProcess:
     return subprocess.run(
         [CLI] + args,
         input=input_text,
@@ -38,28 +77,74 @@ class TestMeta:
     def test_help(self):
         result = run_cli(["--help"])
         assert result.returncode == 0
-        assert "Usage: apple-translate" in result.stdout
+        assert "Usage:" in result.stdout
         assert "--from" in result.stdout
         assert "--to" in result.stdout
 
     def test_help_short(self):
         result = run_cli(["-h"])
         assert result.returncode == 0
-        assert "Usage: apple-translate" in result.stdout
+        assert "Usage:" in result.stdout
 
     def test_version(self):
         result = run_cli(["--version"])
         assert result.returncode == 0
-        assert "apple-translate" in result.stdout
-        # Version string should match semver-like pattern
-        parts = result.stdout.strip().split()
-        assert len(parts) == 2
-        assert parts[1].count(".") == 2  # e.g. "1.0.0"
+        assert result.stdout.strip() == "apple-translate 1.0.1"
 
     def test_version_short(self):
         result = run_cli(["-v"])
         assert result.returncode == 0
-        assert "apple-translate" in result.stdout
+        assert result.stdout.strip() == "apple-translate 1.0.1"
+
+    def test_help_ignores_stdin(self):
+        result = run_cli(["--help"], input_text="Hello")
+        assert result.returncode == 0
+        assert "Usage:" in result.stdout
+
+
+# ── Required arguments ──
+
+
+class TestRequiredArgs:
+    def test_missing_both(self):
+        result = run_cli([], input_text="Hello")
+        assert result.returncode != 0
+        assert "--from" in result.stderr
+
+    def test_missing_from(self):
+        result = run_cli(["--to", "ja"], input_text="Hello")
+        assert result.returncode != 0
+        assert "--from" in result.stderr
+
+    def test_missing_to(self):
+        result = run_cli(["--from", "en"], input_text="Hello")
+        assert result.returncode != 0
+        assert "--to" in result.stderr
+
+
+# ── Same-language pair detection ──
+
+
+class TestSameLanguagePair:
+    @pytest.mark.parametrize(
+        "src,tgt",
+        SAME_LANGUAGE_PAIRS,
+        ids=[f"{s}->{t}" for s, t in SAME_LANGUAGE_PAIRS],
+    )
+    def test_same_language_maximal(self, src: str, tgt: str):
+        result = run_cli(["--from", src, "--to", tgt], input_text="Hello")
+        assert result.returncode != 0
+        assert "same language" in result.stderr.lower()
+
+    @pytest.mark.parametrize(
+        "src,tgt",
+        [("en", "en"), ("ja", "ja"), ("ko", "ko")],
+        ids=["en->en", "ja->ja", "ko->ko"],
+    )
+    def test_same_language_short(self, src: str, tgt: str):
+        result = run_cli(["--from", src, "--to", tgt], input_text="Hello")
+        assert result.returncode != 0
+        assert "same language" in result.stderr.lower()
 
 
 # ── --list-languages ──
@@ -70,23 +155,20 @@ class TestListLanguages:
         result = run_cli(["--list-languages"])
         assert result.returncode == 0
         lines = result.stdout.strip().splitlines()
-        assert len(lines) > 0
-        # Each line should have a language code and name
+        assert len(lines) >= 21
         for line in lines:
             parts = line.split()
-            assert len(parts) >= 2, f"Unexpected line format: {line}"
+            assert len(parts) >= 2, f"Unexpected format: {line}"
 
     def test_list_languages_short(self):
         result = run_cli(["-l"])
         assert result.returncode == 0
-        assert len(result.stdout.strip().splitlines()) > 0
+        assert len(result.stdout.strip().splitlines()) >= 21
 
-    def test_list_languages_contains_common(self):
+    @pytest.mark.parametrize("lang", SUPPORTED_LANGUAGES)
+    def test_list_contains(self, lang: str):
         result = run_cli(["-l"])
-        output = result.stdout
-        # Should contain common languages
-        assert "en-" in output  # English
-        assert "ja-" in output  # Japanese
+        assert lang in result.stdout
 
 
 # ── Plain text translation ──
@@ -94,7 +176,7 @@ class TestListLanguages:
 
 class TestPlainText:
     def test_empty_input(self):
-        result = run_cli([], input_text="")
+        result = run_cli(["--from", "en", "--to", "ja"], input_text="")
         assert result.returncode == 0
         assert result.stdout == ""
 
@@ -103,7 +185,6 @@ class TestPlainText:
         assert result.returncode == 0
         output = result.stdout.strip()
         assert len(output) > 0
-        # Should NOT be JSON
         assert not output.startswith("{")
 
     def test_multiple_lines(self):
@@ -115,110 +196,69 @@ class TestPlainText:
         lines = result.stdout.strip().splitlines()
         assert len(lines) == 2
 
-    def test_default_is_en_to_ja(self):
-        """Default --from en --to ja should work without flags."""
-        result = run_cli([], input_text="Thank you")
-        assert result.returncode == 0
-        assert len(result.stdout.strip()) > 0
-
-
-# ── Edge cases ──
-
-
-class TestEdgeCases:
     def test_whitespace_only_input(self):
-        result = run_cli([], input_text="   \n  \n   ")
+        result = run_cli(
+            ["--from", "en", "--to", "ja"],
+            input_text="   \n  \n   ",
+        )
         assert result.returncode == 0
         assert result.stdout.strip() == ""
 
-    def test_help_ignores_stdin(self):
-        """--help should print help even if stdin has data."""
-        result = run_cli(["--help"], input_text="Hello")
-        assert result.returncode == 0
-        assert "Usage:" in result.stdout
+
+# ── Short-form language keys ──
 
 
-# ── Translation: all-pairs (every language → every other language) ──
-
-
-def _available_language_codes() -> list[str]:
-    """Return language codes reported by --list-languages."""
-    result = subprocess.run(
-        [CLI, "--list-languages"], capture_output=True, text=True, timeout=15
+class TestShortFormKeys:
+    @pytest.mark.parametrize(
+        "src,tgt,text",
+        [
+            ("ja", "en", "こんにちは"),
+            ("en", "ja", "Hello"),
+            ("en", "ko", "Hello"),
+            ("ja", "zh-Hans", "こんにちは"),
+            ("ja", "zh-Hant", "こんにちは"),
+            ("ko", "ja", "안녕하세요"),
+            ("fr", "de", "Bonjour"),
+            ("es", "pt", "Hola"),
+        ],
+        ids=[
+            "ja->en", "en->ja", "en->ko", "ja->zh-Hans",
+            "ja->zh-Hant", "ko->ja", "fr->de", "es->pt",
+        ],
     )
-    codes = []
-    for line in result.stdout.strip().splitlines():
-        parts = line.split()
-        if parts:
-            codes.append(parts[0])
-    return codes
+    def test_short_form(self, src: str, tgt: str, text: str):
+        result = run_cli(["--from", src, "--to", tgt], input_text=text)
+        assert result.returncode == 0, f"stderr: {result.stderr}"
+        assert len(result.stdout.strip()) > 0
 
 
-def _konnichiwa_in_all_languages() -> dict[str, str]:
-    """Translate 「こんにちは」 from Japanese into every other language.
-
-    Returns a dict of {lang_code: translated_text}.
-    """
-    codes = _available_language_codes()
-    targets = [c for c in codes if not c.startswith("ja-")]
-
-    translations: dict[str, str] = {"ja-Jpan-JP": "こんにちは"}
-    for lang in targets:
-        r = subprocess.run(
-            [CLI, "--from", "ja", "--to", lang],
-            input="こんにちは",
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        text = r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else "こんにちは"
-        translations[lang] = text
-    return translations
+# ── Translation: all valid pairs (maximalIdentifier) ──
 
 
-# Compute once at collection time
-_TRANSLATIONS: dict[str, str] = {}
-_ALL_CODES: list[str] = []
-
-
-def _ensure_translations():
-    global _TRANSLATIONS, _ALL_CODES
-    if not _TRANSLATIONS:
-        _ALL_CODES = _available_language_codes()
-        _TRANSLATIONS = _konnichiwa_in_all_languages()
-
-
-def _all_pairs() -> list[tuple[str, str, str]]:
-    """Return (from_lang, hello_text, to_lang) for every source→target pair."""
-    _ensure_translations()
+def _valid_pairs() -> list[tuple[str, str]]:
+    """416 valid translation pairs (all combinations minus same-languageCode)."""
     pairs = []
-    for src in _ALL_CODES:
-        src_text = _TRANSLATIONS.get(src, "こんにちは")
-        for tgt in _ALL_CODES:
-            if src != tgt:
-                pairs.append((src, src_text, tgt))
+    for src in SUPPORTED_LANGUAGES:
+        for tgt in SUPPORTED_LANGUAGES:
+            if src != tgt and (src, tgt) not in _SAME_LANG_SET:
+                pairs.append((src, tgt))
     return pairs
 
 
-def pytest_generate_tests(metafunc):
-    if "translation_pair" in metafunc.fixturenames:
-        pairs = _all_pairs()
-        ids = [f"{s}->{t}" for s, _, t in pairs]
-        metafunc.parametrize("translation_pair", pairs, ids=ids)
-
-
 class TestAllLanguagePairs:
-    def test_konnichiwa_all_pairs(self, translation_pair: tuple[str, str, str]):
-        """Translate each language's 'hello' into every other available language."""
-        from_lang, input_text, to_lang = translation_pair
+    @pytest.mark.parametrize(
+        "src,tgt",
+        _valid_pairs(),
+        ids=[f"{s}->{t}" for s, t in _valid_pairs()],
+    )
+    def test_translation_pair(self, src: str, tgt: str):
         result = run_cli(
-            ["--from", from_lang, "--to", to_lang],
-            input_text=input_text,
+            ["--from", src, "--to", tgt],
+            input_text="Hello",
             timeout=30,
         )
         assert result.returncode == 0, (
-            f"[{from_lang}->{to_lang}] exit={result.returncode} "
+            f"[{src}->{tgt}] exit={result.returncode} "
             f"stderr={result.stderr.strip()}"
         )
-        output = result.stdout.strip()
-        assert len(output) > 0, f"[{from_lang}->{to_lang}] Empty output"
+        assert len(result.stdout.strip()) > 0, f"[{src}->{tgt}] Empty output"
