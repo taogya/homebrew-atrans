@@ -2,7 +2,7 @@ class Atrans < Formula
   desc "CLI translation tool powered by Apple Translation API"
   homepage "https://github.com/taogya/homebrew-atrans"
   url "https://github.com/taogya/homebrew-atrans/archive/refs/tags/v2.0.0.tar.gz"
-  sha256 "de632c82fb1d0713fc3fe8d46545d11d979c38a10d9aafc7313d3d03ca5b69d1"
+  sha256 "a94b9d99e0f09d64c1db65e86fc17403248d446b7ca486c39589e266e8a2251b"
   license "BSD-3-Clause"
 
   depends_on xcode: ["26.0", :build]

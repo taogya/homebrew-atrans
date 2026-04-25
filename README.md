@@ -154,8 +154,11 @@ rm /usr/local/bin/atrans
    ```
    - `url` のバージョンを更新
    - `sha256` を更新
+   - この更新は Homebrew tap 側の変更であり、`vX.Y.Z` タグ自体は動かさない
 4. README の Homebrew インストール例が stable 前提になっていることを確認し、Formula と合わせてコミット＆プッシュ
 5. GitHub でリリースを作成（タグ `vX.Y.Z`）
+
+補足: `vX.Y.Z` タグは配布するソースコードのスナップショットです。一方で `Formula/atrans.rb` は Homebrew tap の現在の内容が参照されます。つまり `brew install atrans` では最新の Formula が読まれ、その Formula に書かれた `url` 先として `vX.Y.Z` の tarball がダウンロードされます。
 
 ## License
 
