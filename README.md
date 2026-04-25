@@ -8,13 +8,9 @@ A command-line translation tool powered by Apple Translation API. All translatio
 
 ### Homebrew
 
-このリポジトリには Homebrew Formula が含まれています。現在の Formula は `main` ブランチを参照する HEAD インストールです。
-
-This repository includes a Homebrew formula. The current formula installs from the `main` branch as a HEAD build.
-
 ```bash
 brew tap taogya/atrans
-brew install --HEAD atrans
+brew install atrans
 ```
 
 ### ソースからビルド / Build from Source
@@ -141,22 +137,25 @@ rm /usr/local/bin/atrans
 
 開発者向けの手順です。 / For maintainers.
 
-1. `Sources/main.swift` のバージョン文字列を更新
-2. コミット＆タグ作成
+1. `Sources/main.swift` のバージョン文字列を更新し、リリース対象の変更をコミット
    ```bash
-   git add -A && git commit -m "Bump version to vX.Y.Z"
-   git tag vX.Y.Z
-   git push origin main --tags
+   git add -A && git commit -m "Release vX.Y.Z"
    ```
-3. GitHub でリリースを作成（タグ `vX.Y.Z`）
-4. `Formula/atrans.rb` を更新
+2. タグを作成して push
+   ```bash
+   git tag -a vX.Y.Z -m "vX.Y.Z"
+   git push origin main
+   git push origin refs/tags/vX.Y.Z
+   ```
+3. `Formula/atrans.rb` を更新
    ```bash
    # tar.gz の SHA256 を取得
    curl -sL https://github.com/taogya/homebrew-atrans/archive/refs/tags/vX.Y.Z.tar.gz | shasum -a 256
    ```
    - `url` のバージョンを更新
    - `sha256` を更新
-5. Formula をコミット＆プッシュ
+4. README の Homebrew インストール例が stable 前提になっていることを確認し、Formula と合わせてコミット＆プッシュ
+5. GitHub でリリースを作成（タグ `vX.Y.Z`）
 
 ## License
 

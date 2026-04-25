@@ -1,7 +1,8 @@
 class Atrans < Formula
   desc "CLI translation tool powered by Apple Translation API"
   homepage "https://github.com/taogya/homebrew-atrans"
-  head "https://github.com/taogya/homebrew-atrans.git", branch: "main"
+  url "https://github.com/taogya/homebrew-atrans/archive/refs/tags/v2.0.0.tar.gz"
+  sha256 "1c70fc4e9f21591de7473182051cc197d95083058969c4f440b3dacd1b1cf1fd"
   license "BSD-3-Clause"
 
   depends_on xcode: ["26.0", :build]
@@ -27,6 +28,6 @@ class Atrans < Formula
   end
 
   test do
-    assert_match "atrans", shell_output("#{bin}/atrans --version")
+    assert_match "atrans 2.0.0", shell_output("#{bin}/atrans --version")
   end
 end
