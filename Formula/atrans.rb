@@ -1,8 +1,7 @@
-class AppleTranslate < Formula
+class Atrans < Formula
   desc "CLI translation tool powered by Apple Translation API"
-  homepage "https://github.com/taogya/AppleTranslateScript"
-  url "https://github.com/taogya/AppleTranslateScript/archive/refs/tags/v1.1.0.tar.gz"
-  sha256 "77665c92a07c13f7b6fae1dcf832ef43220d61365585d2cc3e7d06e5142ef998"
+  homepage "https://github.com/taogya/homebrew-atrans"
+  head "https://github.com/taogya/homebrew-atrans.git", branch: "main"
   license "BSD-3-Clause"
 
   depends_on xcode: ["26.0", :build]
@@ -12,7 +11,7 @@ class AppleTranslate < Formula
     system "swift", "build",
            "-c", "release",
            "--disable-sandbox"
-    bin.install ".build/release/apple-translate"
+    bin.install ".build/release/atrans"
   end
 
   def caveats
@@ -28,6 +27,6 @@ class AppleTranslate < Formula
   end
 
   test do
-    assert_match "apple-translate", shell_output("#{bin}/apple-translate --version")
+    assert_match "atrans", shell_output("#{bin}/atrans --version")
   end
 end

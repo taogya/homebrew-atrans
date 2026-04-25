@@ -1,8 +1,8 @@
 """
-Integration tests for apple-translate CLI v1.1.0.
+Integration tests for atrans CLI v2.0.0.
 
 Requires:
-    - The CLI binary built at .build/release/apple-translate
+    - The CLI binary built at .build/release/atrans
     - Run: swift build -c release
     - Run: python -m pytest tests/ -v
 """
@@ -14,7 +14,7 @@ import tempfile
 import pytest
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CLI = os.path.join(PROJECT_ROOT, ".build", "release", "apple-translate")
+CLI = os.path.join(PROJECT_ROOT, ".build", "release", "atrans")
 
 # 21 supported languages (maximalIdentifier) — explicitly listed
 SUPPORTED_LANGUAGES = [
@@ -89,12 +89,12 @@ class TestMeta:
     def test_version(self):
         result = run_cli(["--version"])
         assert result.returncode == 0
-        assert result.stdout == "apple-translate 1.1.0\n"
+        assert result.stdout == "atrans 2.0.0\n"
 
     def test_version_short(self):
         result = run_cli(["-v"])
         assert result.returncode == 0
-        assert result.stdout == "apple-translate 1.1.0\n"
+        assert result.stdout == "atrans 2.0.0\n"
 
     def test_help_ignores_stdin(self):
         result = run_cli(["--help"], input_text="Hello")
@@ -264,7 +264,7 @@ class TestArgumentText:
         assert result.stdout == "こんにちは、さようなら\n"
 
     def test_positional_with_exclamation(self):
-        """apple-translate 'Hello!\nWorld !' --from en --to ja"""
+        """atrans 'Hello!\nWorld !' --from en --to ja"""
         result = run_cli(["Hello!\\nWorld !", "--from", "en", "--to", "ja"])
         assert result.returncode == 0
         assert result.stdout == "こんにちは！ 世界！\n"

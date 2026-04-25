@@ -1,17 +1,17 @@
 /// Apple Translation API を使った CLI 翻訳ツール。
 ///
 /// 使い方:
-///   echo "Hello" | apple-translate --from en --to ja
-///   apple-translate 'Hello, world!' --from en --to ja
-///   apple-translate --text 'Hello' --from en --to ja
-///   apple-translate --file input.txt --from en --to ja
-///   apple-translate --list-languages
+///   echo "Hello" | atrans --from en --to ja
+///   atrans 'Hello, world!' --from en --to ja
+///   atrans --text 'Hello' --from en --to ja
+///   atrans --file input.txt --from en --to ja
+///   atrans --list-languages
 
 import Foundation
 import Translation
 
 @main
-struct AppleTranslateCLI {
+struct AtransCLI {
     static func main() async throws {
         try await _run()
     }
@@ -27,7 +27,7 @@ struct AppleTranslateCLI {
 
         // --version
         if args.contains("--version") || args.contains("-v") {
-            print("apple-translate 1.1.0")
+            print("atrans 2.0.0")
             return
         }
 
@@ -214,8 +214,8 @@ struct AppleTranslateCLI {
 
     static func printUsage() {
         let usage = """
-        Usage: apple-translate [TEXT] --from <LANG> --to <LANG>
-               echo <text> | apple-translate --from <LANG> --to <LANG>
+        Usage: atrans [TEXT] --from <LANG> --to <LANG>
+               echo <text> | atrans --from <LANG> --to <LANG>
 
         A CLI translation tool powered by Apple Translation API.
         Translates text from argument, file, or stdin.
@@ -239,11 +239,11 @@ struct AppleTranslateCLI {
           are accepted. Use --list-languages to see available languages.
 
         Examples:
-          apple-translate 'Hello, world!' --from en --to ja
-          apple-translate --text 'Hello, world!' --from en --to ja
-          apple-translate --file input.txt --from en --to ja
-          echo 'Hello, world!' | apple-translate --from en --to ja
-          apple-translate --list-languages
+          atrans 'Hello, world!' --from en --to ja
+          atrans --text 'Hello, world!' --from en --to ja
+          atrans --file input.txt --from en --to ja
+          echo 'Hello, world!' | atrans --from en --to ja
+          atrans --list-languages
         """
         print(usage)
     }

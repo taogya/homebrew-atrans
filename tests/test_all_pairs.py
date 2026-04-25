@@ -1,12 +1,12 @@
 """
-All language pair combination tests for apple-translate CLI.
+All language pair combination tests for atrans CLI.
 
 This test file covers 416 valid translation pairs (21 languages × 20 targets
 minus same-languageCode pairs). Separated from main tests for faster
 iteration during development.
 
 Requires:
-    - The CLI binary built at .build/release/apple-translate
+    - The CLI binary built at .build/release/atrans
     - Run: swift build -c release
     - Run: python -m pytest tests/test_all_pairs.py -v
 """
@@ -16,7 +16,7 @@ import subprocess
 import pytest
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CLI = os.path.join(PROJECT_ROOT, ".build", "release", "apple-translate")
+CLI = os.path.join(PROJECT_ROOT, ".build", "release", "atrans")
 
 SUPPORTED_LANGUAGES = [
     "ar-Arab-AE",

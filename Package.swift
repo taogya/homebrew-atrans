@@ -2,11 +2,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "AppleTranslateCLI",
+    name: "atrans",
     platforms: [.macOS(.v26)],
     targets: [
         .executableTarget(
-            name: "apple-translate",
+            name: "atrans",
             path: "Sources"
         ),
     ],

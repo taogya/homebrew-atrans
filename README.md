@@ -1,4 +1,4 @@
-# apple-translate
+# atrans
 
 Apple Translation API を使ったコマンドライン翻訳ツール。すべての翻訳はオンデバイスで処理され、データが外部に送信されることはありません。
 
@@ -8,25 +8,23 @@ A command-line translation tool powered by Apple Translation API. All translatio
 
 ### Homebrew
 
-```bash
-brew tap taogya/AppleTranslateScript https://github.com/taogya/AppleTranslateScript
-brew install apple-translate
-```
+このリポジトリには Homebrew Formula が含まれています。現在の Formula は `main` ブランチを参照する HEAD インストールです。
 
-アップデート / Update:
+This repository includes a Homebrew formula. The current formula installs from the `main` branch as a HEAD build.
 
 ```bash
-brew update && brew upgrade apple-translate
+brew tap taogya/atrans
+brew install --HEAD atrans
 ```
 
 ### ソースからビルド / Build from Source
 
 ```bash
-git clone https://github.com/taogya/AppleTranslateScript.git
-cd AppleTranslateScript
+git clone https://github.com/taogya/homebrew-atrans.git atrans
+cd atrans
 swift build -c release
 # バイナリを PATH の通った場所にコピー / Copy binary to a directory in PATH
-cp .build/release/apple-translate /usr/local/bin/
+cp .build/release/atrans /usr/local/bin/
 ```
 
 ## 必要環境 / Requirements
@@ -42,10 +40,10 @@ cp .build/release/apple-translate /usr/local/bin/
 
 ```bash
 # stdin（パイプ）
-echo 'Hello, world!' | apple-translate --from en --to ja
+echo 'Hello, world!' | atrans --from en --to ja
 # => こんにちは、世界！
 
-echo "こんにちは" | apple-translate --from ja --to en
+echo "こんにちは" | atrans --from ja --to en
 # => Hello
 ```
 
@@ -53,17 +51,17 @@ echo "こんにちは" | apple-translate --from ja --to en
 
 ```bash
 # 位置引数
-apple-translate 'Hello, world!' --from en --to ja
+atrans 'Hello, world!' --from en --to ja
 # => こんにちは、世界！
 
 # --text フラグ
-apple-translate --text 'Hello, world!' --from en --to ja
+atrans --text 'Hello, world!' --from en --to ja
 ```
 
 ### ファイル入力 / File Input
 
 ```bash
-apple-translate --file input.txt --from en --to ja
+atrans --file input.txt --from en --to ja
 ```
 
 各行が個別に翻訳され、結果が stdout に出力されます。
@@ -77,16 +75,16 @@ Both short and full language codes are accepted.
 
 ```bash
 # 短縮形 / Short form
-apple-translate 'Hello' --from en --to ja
+atrans 'Hello' --from en --to ja
 
 # フル形 / Full form (maximalIdentifier)
-apple-translate 'Hello' --from en-Latn-US --to ja-Jpan-JP
+atrans 'Hello' --from en-Latn-US --to ja-Jpan-JP
 ```
 
 ### 利用可能な言語一覧 / List Available Languages
 
 ```bash
-apple-translate --list-languages
+atrans --list-languages
 ```
 
 ### オプション一覧 / Options
@@ -124,15 +122,19 @@ This tool uses the `installedSource` parameter of Apple's Translation framework,
 
 ### Homebrew
 
+Homebrew でインストールした場合:
+
+Installed with Homebrew:
+
 ```bash
-brew uninstall apple-translate
-brew untap taogya/AppleTranslateScript
+brew uninstall atrans
+brew untap taogya/atrans
 ```
 
 ### ソースからインストールした場合 / Manual
 
 ```bash
-rm /usr/local/bin/apple-translate
+rm /usr/local/bin/atrans
 ```
 
 ## リリース手順 / Release Process
@@ -147,10 +149,10 @@ rm /usr/local/bin/apple-translate
    git push origin main --tags
    ```
 3. GitHub でリリースを作成（タグ `vX.Y.Z`）
-4. `Formula/apple-translate.rb` を更新
+4. `Formula/atrans.rb` を更新
    ```bash
    # tar.gz の SHA256 を取得
-   curl -sL https://github.com/taogya/AppleTranslateScript/archive/refs/tags/vX.Y.Z.tar.gz | shasum -a 256
+   curl -sL https://github.com/taogya/homebrew-atrans/archive/refs/tags/vX.Y.Z.tar.gz | shasum -a 256
    ```
    - `url` のバージョンを更新
    - `sha256` を更新
